@@ -268,7 +268,7 @@ def wallCheck():
         target_text_region = (834, 101, 213, 294)
         keyword = "200"
         if check_text_in_region(target_text_region, keyword):
-            send_discord_message("200개 클리어 완료, 매크로 중지")
+            send_discord_message(f"{characterName} : 200개 클리어 완료, 매크로 중지")
             result = True
         else:
             target_text_region = (834, 101, 213, 294)
@@ -278,10 +278,14 @@ def wallCheck():
             pyautogui.click(915, 450)
             time.sleep(0.1)
             if check_text_in_region(target_text_region, keyword):
-                send_discord_message("벽돌 갯수 2개, 매크로 중지.")
+                send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지.")
                 result = True
     
-        
+    popup_region = (382, 370, 125, 82)
+    popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
+    if is_popup_visible(popup_region, popup_image_path):
+        send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지.")
+        result = True
 def start_macro():
     global running
     print("▶ 매크로 시작")
@@ -295,7 +299,7 @@ def stop_macro():
 keyboard.add_hotkey('F1', start_macro)
 keyboard.add_hotkey('F2', stop_macro)
 
-
+characterName = input("캐릭터명 : ")
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
 automation_loop()
