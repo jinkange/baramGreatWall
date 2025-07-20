@@ -11,6 +11,7 @@ import win32gui, win32con
 import win32process
 import win32api
 import requests
+import re
 
 webhook_url = 'https://discord.com/api/webhooks/1396398717611020339/0nLGyT_nBVYjxEL_R3PJnGGjoVUeNwUAOLx3q-rd_O3zJKxci76FP4n11cRUPozypjU-'
 result = False
@@ -74,10 +75,26 @@ def check_image_changed(before_img, after_img, threshold=10):
     non_zero_count = cv2.countNonZero(gray)
     return non_zero_count > threshold
 
-def check_text_in_region(region, keyword):
+
+def check_text_in_region(region, keywords):
     img = screenshot_region(region)
     result = reader.readtext(img, detail=0)
-    return any(keyword in line for line in result)
+    return any(any(keyword in line for keyword in keywords) for line in result)
+
+def check_number_with_context(region, context_keyword, min_value=200):
+    img = screenshot_region(region)
+    lines = reader.readtext(img, detail=0)
+
+    for line in lines:
+        print(f"OCR 감지된 라인: {line}")
+        if context_keyword in line:
+            numbers = re.findall(r'\d+', line)
+            for num_str in numbers:
+                number = int(num_str)
+                if number >= min_value:
+                    return True
+    return False
+
 
 def press_key(key, duration=0.05):
     hwnd = find_window(target_title)
@@ -267,12 +284,12 @@ def wallCheck():
         time.sleep(0.1)
         target_text_region = (834, 101, 213, 294)
         keyword = "200"
-        if check_text_in_region(target_text_region, keyword):
-            send_discord_message(f"{characterName} : 200개 클리어 완료, 매크로 중지")
+        if check_number_with_context(target_text_region, "만리장성", 200):
+            send_discord_message(f"{characterName} : 만리장성 200회 이상 클리어! 매크로 중지")
             result = True
         else:
             target_text_region = (834, 101, 213, 294)
-            keyword = "벽돌 2개"
+            keyword = ["벽돌 2개", "벽돌 1개"]
             pyautogui.press('i')
             time.sleep(0.1)
             pyautogui.click(915, 450)
