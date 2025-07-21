@@ -18,6 +18,53 @@ result = False
 running = False
 reader = easyocr.Reader(['ko', 'en'], gpu=False)
 target_title = "MapleStory Worlds-바람의나라 클래식"
+console_keyword  = "baramGreatWall"
+
+def find_hwnd_by_title_contains(keyword):
+    hwnd = None
+
+    def enum_handler(h, _):
+        nonlocal hwnd
+        if win32gui.IsWindowVisible(h):
+            title = win32gui.GetWindowText(h)
+            if keyword.lower() in title.lower():
+                hwnd = h
+
+    win32gui.EnumWindows(enum_handler, None)
+    return hwnd
+
+def move_console_next_to_game(game_title, console_keyword):
+    game_windows = gw.getWindowsWithTitle(game_title)
+    if not game_windows:
+        print("게임 창을 찾을 수 없습니다.")
+        return
+
+    game_win = game_windows[0]
+    gx, gy = game_win.left, game_win.top
+    gwidth, gheight = game_win.width, game_win.height
+
+    # 콘솔창 찾기
+    console_hwnd = find_hwnd_by_title_contains(console_keyword)
+    if console_hwnd is None:
+        print("콘솔창을 찾을 수 없습니다.")
+        return
+
+    # 콘솔창 크기 설정 (게임창 높이에 맞추고 너비는 400 정도)
+    console_width = 400
+    console_height = gheight
+    console_x = gx + gwidth  # 게임 창 오른쪽에 붙이기
+    console_y = gy
+
+    win32gui.SetWindowPos(
+        console_hwnd,
+        None,
+        console_x, console_y,
+        console_width, console_height,
+        win32con.SWP_NOZORDER
+    )
+
+
+
 def find_window(title):
     hwnd = None
 
@@ -328,4 +375,5 @@ keyboard.add_hotkey('F2', stop_macro)
 characterName = input("캐릭터명 : ")
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
+move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
 automation_loop()
