@@ -165,7 +165,7 @@ def check_number_with_context(region, context_keyword, min_value=200):
     return False
 
 
-def press_key(key, duration=0.05):
+def press_key(key, duration=0.25):
     hwnd = find_window(target_title)
     if hwnd:
         activate_window(hwnd)
@@ -178,7 +178,7 @@ def load_move_sequence(json_path):
         return json.load(f)
 
 def move_one_step(key):
-    press_key(key, duration=0.05)
+    press_key(key, duration=0.25)
 
 def get_reverse_key(key):
     reverse_map = {
@@ -243,25 +243,26 @@ def send_discord_message(message):
 
 def activate_window(hwnd):
     if hwnd:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-
-        # 현재 쓰레드 ID와 대상 윈도우 쓰레드 ID 연결
-        fg_window = win32gui.GetForegroundWindow()
-        current_thread = win32api.GetCurrentThreadId()
-        target_thread, _ = win32process.GetWindowThreadProcessId(hwnd)
-        fg_thread, _ = win32process.GetWindowThreadProcessId(fg_window)
-
-        win32process.AttachThreadInput(current_thread, target_thread, True)
-        win32process.AttachThreadInput(current_thread, fg_thread, True)
-
         try:
+            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+
+            # 현재 쓰레드 ID와 대상 윈도우 쓰레드 ID 연결
+            fg_window = win32gui.GetForegroundWindow()
+            current_thread = win32api.GetCurrentThreadId()
+            target_thread, _ = win32process.GetWindowThreadProcessId(hwnd)
+            fg_thread, _ = win32process.GetWindowThreadProcessId(fg_window)
+
+            win32process.AttachThreadInput(current_thread, target_thread, True)
+            win32process.AttachThreadInput(current_thread, fg_thread, True)
+
+        
             win32gui.SetForegroundWindow(hwnd)
+
+            # 다시 연결 해제
+            win32process.AttachThreadInput(current_thread, target_thread, False)
+            win32process.AttachThreadInput(current_thread, fg_thread, False)
         except Exception as e:
             print(f"⚠️ SetForegroundWindow 실패: {e}")
-
-        # 다시 연결 해제
-        win32process.AttachThreadInput(current_thread, target_thread, False)
-        win32process.AttachThreadInput(current_thread, fg_thread, False)
 
         time.sleep(0.2)
         
@@ -366,6 +367,7 @@ def wallCheck():
             send_discord_message(f"{characterName} : 만리장성 200회 이상 클리어! 매크로 중지")
             result = 1
         else:
+            
             target_text_region = (834, 101, 213, 294)
             keyword = ["벽돌 2개", "벽돌 1개"]
             pyautogui.press('i')
@@ -379,8 +381,8 @@ def wallCheck():
     popup_region = (382, 370, 125, 82)
     popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
     if is_popup_visible(popup_region, popup_image_path):
-        send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지.")
-        result = 1
+        send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지. F1 : 이어하기")
+        result = 2
 def start_macro():
     global running
     print("▶ 매크로 시작")
@@ -391,8 +393,8 @@ def stop_macro():
     print("⏹ 매크로 중지")
     running = False
 
-keyboard.add_hotkey('F1', start_macro)
-keyboard.add_hotkey('F2', stop_macro)
+keyboard.add_hotkey('1', start_macro)
+keyboard.add_hotkey('2', stop_macro)
 
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)

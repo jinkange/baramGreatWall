@@ -25,7 +25,7 @@ def on_press(key):
     if key in ARROW_KEYS:
         key_str = ARROW_KEYS[key]
         # timestamp는 0으로 고정해서 저장 (호환 위해)
-        recorded_keys.append([key_str, 0])
+        recorded_keys.append([key_str])
         print(f"▶ {key_str} pressed")
 
 def save_to_json(filename="mapData.json"):
