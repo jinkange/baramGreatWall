@@ -213,7 +213,7 @@ def automation_loop():
         if(result):
                 break
         if not running:
-            time.sleep(0.1)
+            time.sleep(1)
             continue  # F1 누를 때까지 대기
         
         for step in move_sequence:
@@ -224,7 +224,8 @@ def automation_loop():
                 check = False
                 if (tempStep == key):
                     continue
-                
+            
+            wallCheck()    
             success = move_and_verify_step(key, region_before, region_after)
             
             if(not success):
@@ -232,8 +233,11 @@ def automation_loop():
                 check = True
                 tempStep = key
                 
-            wallCheck()
-            if(result):
+            
+            if(result == 1):
+                break
+            elif(result == 2):
+                stop_macro()
                 break
         if not running:
             continue  # 정지 상태이면 역방향 스킵
@@ -247,7 +251,8 @@ def automation_loop():
                 check = False
                 if (tempStep == key):
                     continue
-                
+            
+            wallCheck()    
             success = move_and_verify_step(key, region_before, region_after)
             
             if(not success):
@@ -255,8 +260,11 @@ def automation_loop():
                 check = True
                 tempStep = key
                 
-            wallCheck()
-            if(result):
+            
+            if(result == 1):
+                break
+            elif(result == 2):
+                stop_macro()
                 break
         print("✅ 정/역방향 이동 모두 완료.")
     
@@ -269,24 +277,25 @@ def wallCheck():
     popup_image_path = "./images/popup.png"  # 비교할 팝업 이미지 경로
     if is_popup_visible(popup_region, popup_image_path):
         #팝업닫기
+        time.sleep(0.3)
         pyautogui.press('enter')
-        time.sleep(0.1)
+        time.sleep(0.3)
         pyautogui.press('enter')
-        time.sleep(0.1)
+        time.sleep(0.3)
         pyautogui.press('enter')
         #
-        time.sleep(0.1)
+        time.sleep(0.3)
         pyautogui.press('s')
-        time.sleep(0.1)
+        time.sleep(0.3)
         pyautogui.click(1025, 440)
-        time.sleep(0.1)
+        time.sleep(0.3)
         pyautogui.click(1025, 440)
-        time.sleep(0.1)
+        time.sleep(0.3)
         target_text_region = (834, 101, 213, 294)
         keyword = "200"
         if check_number_with_context(target_text_region, "만리장성", 200):
             send_discord_message(f"{characterName} : 만리장성 200회 이상 클리어! 매크로 중지")
-            result = True
+            result = 1
         else:
             target_text_region = (834, 101, 213, 294)
             keyword = ["벽돌 2개", "벽돌 1개"]
@@ -295,14 +304,14 @@ def wallCheck():
             pyautogui.click(915, 450)
             time.sleep(0.1)
             if check_text_in_region(target_text_region, keyword):
-                send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지.")
-                result = True
+                send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지. F1 : 이어하기")
+                result = 2
     
     popup_region = (382, 370, 125, 82)
     popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
     if is_popup_visible(popup_region, popup_image_path):
         send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지.")
-        result = True
+        result = 1
 def start_macro():
     global running
     print("▶ 매크로 시작")
