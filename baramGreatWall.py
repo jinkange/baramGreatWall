@@ -148,15 +148,17 @@ def check_text_in_region(region, keywords):
     result = reader.readtext(img, detail=0)
     return any(any(keyword in line for keyword in keywords) for line in result)
 
+
 def check_number_with_context(region, context_keyword, min_value=200):
     img = screenshot_region(region)
     lines = reader.readtext(img, detail=0)
 
     for line in lines:
-        print(f"OCR 감지된 라인: {line}")
+        # OCR 결과에서 context_keyword 포함된 줄만 처리
         if context_keyword in line:
-            numbers = re.findall(r'\d+', line)
-            for num_str in numbers:
+            # "숫자+번" 패턴 추출
+            matches = re.findall(r'(\d+)번', line)
+            for num_str in matches:
                 number = int(num_str)
                 if number >= min_value:
                     return True
@@ -392,8 +394,8 @@ def stop_macro():
 keyboard.add_hotkey('F1', start_macro)
 keyboard.add_hotkey('F2', stop_macro)
 
-characterName = input("캐릭터명 : ")
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
 move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
+characterName = input("캐릭터명 : ")
 automation_loop()
