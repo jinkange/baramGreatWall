@@ -13,6 +13,7 @@ import win32api
 import requests
 import re
 
+
 webhook_url = 'https://discord.com/api/webhooks/1396398717611020339/0nLGyT_nBVYjxEL_R3PJnGGjoVUeNwUAOLx3q-rd_O3zJKxci76FP4n11cRUPozypjU-'
 result = False
 running = False
@@ -136,10 +137,11 @@ def screenshot_region(region):
     return np.array(img)
 
 # 이미지 변화 감지 (True면 바뀐 것)
-def check_image_changed(before_img, after_img, threshold=10):
+def check_image_changed(before_img, after_img, threshold=5):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
+    print(non_zero_count)
     return non_zero_count > threshold
 
 
@@ -280,7 +282,7 @@ def automation_loop():
     print("🔄 F1: 시작 | F2: 중지 및 재시작 대기")
     while True:
         # 정방향 이동
-        if(result):
+        if(result == 1):
                 break
         if not running:
             time.sleep(1)
@@ -338,7 +340,7 @@ def automation_loop():
                 break
         print("✅ 정/역방향 이동 모두 완료.")
     
-    if(result):
+    if(result == 1):
         print("✅ 매크로 종료.")
                 
 def wallCheck():
