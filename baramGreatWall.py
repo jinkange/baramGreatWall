@@ -141,7 +141,6 @@ def check_image_changed(before_img, after_img, threshold=5):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
-    print(non_zero_count)
     return non_zero_count > threshold
 
 
@@ -398,8 +397,16 @@ def stop_macro():
     print("⏹ 매크로 중지")
     running = False
 
+def restart_macro():
+    global running
+    global result
+    result = 0
+    print("▶ 매크로 재시작")
+    running = True
+    
 keyboard.add_hotkey('f1', start_macro)
 keyboard.add_hotkey('f2', stop_macro)
+keyboard.add_hotkey('f3', restart_macro)
 
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
