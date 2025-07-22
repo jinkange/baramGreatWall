@@ -279,11 +279,11 @@ def automation_loop():
     region_before = (955, 705, 127, 17)
     region_after = (955, 705, 127, 17)
     print("🔄만리장성2 X:6, Y:97 출발")
-    print("🔄 F1: 시작 | F2: 중지 및 재시작 대기")
+    print("🔄 F1: 시작 | F2: 중지 | F3: 재시작")
     while True:
         # 정방향 이동
         if(result == 1):
-                break
+            break
         if not running:
             time.sleep(1)
             continue  # F1 누를 때까지 대기
@@ -311,6 +311,9 @@ def automation_loop():
             elif(result == 2):
                 stop_macro()
                 break
+            
+        if(result == 1):
+            break
         if not running:
             continue  # 정지 상태이면 역방향 스킵
         print("🔁 역방향 복귀 시작")
@@ -377,13 +380,13 @@ def wallCheck():
             pyautogui.click(915, 450)
             time.sleep(0.1)
             if check_text_in_region(target_text_region, keyword):
-                send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지. F1 : 이어하기")
+                send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지. F3 : 이어하기")
                 result = 2
     
     popup_region = (382, 370, 125, 82)
     popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
     if is_popup_visible(popup_region, popup_image_path):
-        send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지. F1 : 이어하기")
+        send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지. F3 : 이어하기")
         result = 2
 def start_macro():
     global running
@@ -395,8 +398,8 @@ def stop_macro():
     print("⏹ 매크로 중지")
     running = False
 
-keyboard.add_hotkey('1', start_macro)
-keyboard.add_hotkey('2', stop_macro)
+keyboard.add_hotkey('f1', start_macro)
+keyboard.add_hotkey('f2', stop_macro)
 
 # 시작
 move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
