@@ -14,15 +14,17 @@ import win32process
 import win32api
 import requests
 import re
-
-
+from collections import deque
+import time
+from collections import deque
+to_visit = deque()
 webhook_url = 'https://discord.com/api/webhooks/1396398717611020339/0nLGyT_nBVYjxEL_R3PJnGGjoVUeNwUAOLx3q-rd_O3zJKxci76FP4n11cRUPozypjU-'
 result = False
 running = False
 outside = False
 reader = easyocr.Reader(['ko', 'en'], gpu=False)
 target_title = "MapleStory Worlds-바람의나라 클래식"
-console_keyword  = "baramGreatWall"
+console_keyword  = "baramGreatWallBFS"
 
 
 def find_console_window(title_contains):
@@ -140,10 +142,11 @@ def screenshot_region(region):
     return np.array(img)
 
 # 이미지 변화 감지 (True면 바뀐 것)
-def check_image_changed(before_img, after_img, threshold=5):
+def check_image_changed(before_img, after_img, threshold=5, typename=''):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
+    # print(f"{typename} 찾기 : {non_zero_count > threshold} / 다른픽셀 : {non_zero_count}")
     return non_zero_count > threshold
 
 
@@ -169,21 +172,13 @@ def check_number_with_context(region, context_keyword, min_value=200):
     return False
 
 
-def press_key(key, duration=0.20):
-    global target_title
-    hwnd = find_window(target_title)
-    if hwnd:
-        activate_window(hwnd)
-        keyboard.press(key)
-        time.sleep(duration)
-        keyboard.release(key)
 
 def load_move_sequence(json_path):
     with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def move_one_step(key):
-    press_key(key, duration=0.20)
+# def move_one_step(key):
+#     press_key(key, duration=0.3)
 
 def get_reverse_key(key):
     reverse_map = {
@@ -194,26 +189,6 @@ def get_reverse_key(key):
     }
     return reverse_map.get(key, key)
 
-def try_detour(last_key, region_before, region_after):
-    global outside
-    detour_keys = {
-        'left': ['up', 'left','left', 'down'],
-        'right': ['up', 'right','right', 'down'],
-        'up': ['left', 'up','up', 'right'],
-        'down': ['right', 'down','down', 'left']
-    }
-    before = screenshot_region(region_before)
-    for key in detour_keys.get(last_key, []):
-        press_key(key, duration=0.05)
-    after = screenshot_region(region_after)
-    if check_image_changed(before, after):
-        # print(f"✅ {key} 방향 우회 성공")
-        return False
-    else:
-        outside = True
-    # print("⛔ 모든 우회 실패 → 벽 판단")
-        return False
-    
 
 
 def move_and_verify_step(key, region_before, region_after):
@@ -223,17 +198,8 @@ def move_and_verify_step(key, region_before, region_after):
 
     if check_image_changed(before, after):
         return True
-
-    # print(f"⚠️ {key} 이동 실패 → 1초 누르기")
-    # press_key(key, duration=1.0)
-    # after = screenshot_region(region_after)
-
-    # if check_image_changed(before, after):
-        # print(f"✅ {key} 이동 성공 (1초 눌림)")
-        # return True
-
-    # print(f"⚠️ 2차 실패 → 우회 시도")
-    return try_detour(key, region_before, region_after)
+    else:
+        return False
 
 def send_discord_message(message):
     global webhook_url
@@ -274,160 +240,6 @@ def activate_window(hwnd):
 
         time.sleep(0.2)
         
-
-def automation_loop(json_path):
-    global result
-    global running
-    global outside
-    check = False
-    tempStep = ''
-    move_sequence = load_move_sequence(json_path)
-    print(f"🔄 {json_path} 이동 시작")
-    region_before = (955, 705, 127, 17)
-    region_after = (955, 705, 127, 17)
-    while True:
-        # 정방향 이동
-        if(result == 1 or result == 3):
-            break
-        if not running:
-            time.sleep(1)
-            continue  # F1 누를 때까지 대기
-        
-        for step in move_sequence:
-            if not running:
-                break
-            key = step[0]
-            if(check):
-                if(outside):
-                    if (tempStep == key):
-                        continue
-                    else:
-                        outside = False
-                        check = False
-                else:
-                    check = False
-                    if (tempStep == key):
-                        continue
-            
-            wallCheck()    
-            success = move_and_verify_step(key, region_before, region_after)
-            wallCheck()    
-            if(not success):
-                # 우회시도
-                check = True
-                tempStep = key
-                
-            
-            if(result == 1):
-                break
-            elif(result == 2):
-                stop_macro()
-                break
-            elif(result == 3):
-                break
-        if(result == 1 or result == 3):
-            break
-        if not running:
-            continue  # 정지 상태이면 역방향 스킵
-        print("🔁 역방향 복귀 시작")
-        # 역방향 이동
-        for step in reversed(move_sequence):
-            if not running:
-                break
-            key = get_reverse_key(step[0])
-            if(check):
-                if(outside):
-                    if (tempStep == key):
-                        continue
-                    else:
-                        outside = False
-                        check = False
-                else:
-                    check = False
-                    if (tempStep == key):
-                        continue
-            
-            wallCheck()    
-            success = move_and_verify_step(key, region_before, region_after)
-            wallCheck()    
-            if(not success):
-                # 우회시도
-                check = True
-                tempStep = key
-                
-            
-            if(result == 1):
-                break
-            elif(result == 2):
-                stop_macro()
-                break
-            elif(result == 3):
-                break
-        print("✅ 정/역방향 이동 모두 완료.")
-    
-    if(result == 1):
-        print("✅ 매크로 종료.")
-
-def automation_away(json_path):
-    global result
-    global running
-    global outside
-    check = False
-    tempStep = ''
-    move_sequence = load_move_sequence(json_path)
-    print(f"🔄 {json_path} 이동 시작")
-    region_before = (955, 705, 127, 17)
-    region_after = (955, 705, 127, 17)
-    
-    while True:
-        # 정방향 이동
-        if(result == 1):
-            break
-        if not running:
-            time.sleep(1)
-            continue  # F1 누를 때까지 대기
-        
-        for step in move_sequence:
-            if not running:
-                break
-            key = step[0]
-            if(check):
-                if(outside):
-                    if (tempStep == key):
-                        continue
-                    else:
-                        outside = False
-                        check = False
-                else:
-                    check = False
-                    if (tempStep == key):
-                        continue
-            
-            wallCheck()    
-            success = move_and_verify_step(key, region_before, region_after)
-            wallCheck()    
-            if(not success):
-                # 우회시도
-                check = True
-                tempStep = key
-                
-            if(result == 1):
-                break
-            elif(result == 2):
-                stop_macro()
-                break
-            elif(result == 3):
-                break
-        if(result == 1):
-            break
-        if not running:
-            continue  # 정지 상태이면 역방향 스킵
-        break
-    
-    if(result == 1):
-        print("✅ 매크로 종료.")
-        
-                
 def wallCheck():
     global result
     popup_region = (456, 218, 209, 50)
@@ -465,14 +277,9 @@ def wallCheck():
                 send_discord_message(f"{characterName} : 벽돌 갯수 2개, 매크로 중지. F3 : 이어하기")
                 result = 2
     
-    popup_region = (382, 370, 125, 82)
-    popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
-    if is_popup_visible(popup_region, popup_image_path):
-        pyautogui.press('esc')
-        time.sleep(1)
-        print("월드맵 확인. 초기상태로 되돌아가기")
-        # send_discord_message(f"{characterName} : 월드맵 확인, 매크로 중지. F3 : 이어하기")
-        result = 3
+    # popup_region = (382, 370, 125, 82)
+    # popup_image_path = "./images/worldmap.png"  # 비교할 팝업 이미지 경로
+        
 def start_macro():
     global running
     print("▶ 매크로 시작")
@@ -496,25 +303,236 @@ keyboard.add_hotkey('f3', restart_macro)
 
 def run_all_maps():
     global result
-    folder_path = './data'
-    json_files = sorted(glob.glob(os.path.join(folder_path, 'mapData*.json')))
+import time
 
-    while True:
-        for json_path in json_files:
-            print(f"\n📂 {json_path} 실행 중...")
-            automation_loop(json_path)
-            if result == 1:
-                break
-            if result == 3:
-                automation_away('./data/worldMapData.json')
-                break
-        if result == 1:
-                break
+# 기본 방향 설정
+directions = {
+    'up': ('up', (0, -1)),
+    'down': ('down', (0, 1)),
+    'left': ('left', (-1, 0)),
+    'right': ('right', (1, 0)),
+}
+
+def opposite(direction):
+    return {
+        'up': 'down',
+        'down': 'up',
+        'left': 'right',
+        'right': 'left'
+    }[direction]
+
+visited = set()
+path = []
+
+# 현재 좌표 (x, y) 와 포탈 방향 (dx, dy)
+def mark_portal_block_zone(x, y, dx, dy):
+    for i in range(-4, 5):
+        if dx != 0:
+            blocked_x = x + dx * i
+            visited.add((blocked_x, y))
+        elif dy != 0:
+            blocked_y = y + dy * i
+            visited.add((x, blocked_y))
+def press_key(key, duration=0.20):
+    global target_title
+    hwnd = find_window(target_title)
+    if hwnd:
+        activate_window(hwnd)
+        keyboard.press(key)
+        time.sleep(duration)
+        keyboard.release(key)
+
+def move_one_step(key):
+    press_key(key, 0.1)
+    time.sleep(0.1)
+def mark_portal_area_visited(x, y, dx, dy):
+    global visited
+    # dx, dy는 이동방향을 나타냄
+    if dx != 0:  # 수직 이동 (위아래)
+        for i in range(-3, 4):
+            visited.add((x + dx, y + dy + i))
+            path.append((x + dx, y + dy + i))
+    elif dy != 0:  # 수평 이동 (좌우)
+        for i in range(-3, 4):
+            visited.add((x + dx + i, y + dy))
+            path.append((x + dx + i, y + dy))
             
-# 시작
-move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
-move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
-characterName = input("캐릭터명 : ")
-print("🔄만리장성2 X:6, Y:97 출발")
-print("🔄 F1: 시작 | F2: 중지 | F3: 재시작")
-run_all_maps()
+def move_and_verify_step(key):
+    region_move = (955, 705, 127, 17)
+    region_portal = (417, 36, 131, 20)
+
+    before_move = screenshot_region(region_move)
+    before_portal = screenshot_region(region_portal)
+
+    move_one_step(key)
+
+    after_move = screenshot_region(region_move)
+    after_portal = screenshot_region(region_portal)
+
+    moved = check_image_changed(before_move, after_move, 5,"이동확인")
+    portal_moved = check_image_changed(before_portal, after_portal,5, "포탈확인")
+
+    return moved, portal_moved
+        # self.directions = {
+        #     'up': ('up', (-1, 0)),
+        #     'down': ('down', (1, 0)),
+        #     'left': ('left', (0, -1)),
+        #     'right': ('right', (0, 1))
+        # }
+class SpaceExplorer:
+    def __init__(self, target_title):
+        # 방향 매핑 (키보드 키, 방향 벡터, 방향 이름)
+        self.directions = {
+            'up': ('up', (-1, 0)),
+            'down': ('down', (1, 0)),
+            'left': ('left', (0, -1)),
+            'right': ('right', (0, 1))
+        }
+        self.opposite_dir = {
+            'up': 'down',
+            'down': 'up',
+            'left': 'right',
+            'right': 'left'
+        }
+        
+        # 탐색 상태 관리
+        self.visited = set()
+        self.portals = set()
+        self.path = []
+        self.current_pos = (0, 0)
+        self.visited.add(self.current_pos)
+        self.path.append(self.current_pos)
+        self.queue = deque([self.current_pos])
+        
+        # 윈도우 설정
+        self.target_title = target_title
+        
+        
+        # 이미지 캡처 영역 (고정값 사용)
+        self.region_move = (955, 705, 127, 17)
+        self.region_portal = (417, 36, 131, 20)
+        self.portal_avoid_areas = set()
+    
+    def explore(self):
+        """개선된 탐색 메인 루프"""
+        while True:
+            if not self.queue:  # 큐가 비었으면 초기화
+                self.queue = deque([random.choice(list(self.visited))])
+                print("==== 재탐색 시작 ====")
+                
+            pos = self.queue.popleft()
+            self.current_pos = pos
+            
+            # 새로운 지역 우선 탐색을 위해 방향 순서를 랜덤하게 변경
+            import random
+            dirs = list(self.directions.keys())
+            random.shuffle(dirs)
+            
+            for dir_name in dirs:
+                self.process_direction(dir_name)
+            if(result == 1):
+                break
+        
+        # print("탐색 완료!")
+        # print(f"방문지점: {len(self.visited)} | 이동경로: {len(self.path)}")
+    def process_direction(self, dir_name):
+        global result
+        """방향별 처리 로직"""
+        key, (dx, dy) = self.directions[dir_name]
+        new_pos = (self.current_pos[0] + dx, self.current_pos[1] + dy)
+        
+        # 이미 방문했거나 포탈 회피 영역이면 건너뜀
+        if new_pos in self.visited or new_pos in self.portal_avoid_areas:
+            return
+            
+        moved, portal_moved = move_and_verify_step(key)
+        
+        wallCheck()
+        if(result == 1):
+            return
+        elif(result ==2):
+            stop_macro()
+            while(not running):
+                time.sleep(1)
+        
+        while(not running):
+            time.sleep(1)
+                
+        if moved:
+            if portal_moved:
+                self.handle_portal(new_pos, dir_name, dx, dy)
+            else:
+                self.handle_normal_move(new_pos, dir_name)
+
+    def handle_normal_move(self, new_pos, dir_name):
+        """일반 이동 처리"""
+        self.current_pos = new_pos
+        self.visited.add(new_pos)
+        self.path.append(new_pos)
+        
+        # 새로운 지역을 큐의 앞쪽에 추가하여 우선 탐색
+        self.queue.appendleft(new_pos)
+        # print(f"이동 → {new_pos}")
+        
+        
+    def handle_portal(self, portal_pos, dir_name, dx, dy):
+        """포탈 처리 로직 개선"""
+        # print(f"⚠️ 포탈 발견! 위치: {portal_pos}")
+        self.portals.add(portal_pos)
+        
+        # 포탈 주변 6칸을 회피 영역으로 지정
+        self.mark_portal_avoid_area(portal_pos, dx, dy)
+        
+        
+        # 반대 방향으로 1칸 뒤로 물러남
+        pyautogui.press('esc')
+        opposite_key = self.directions[self.opposite_dir[dir_name]][0]
+        press_key(opposite_key)
+        time.sleep(0.2)
+        
+        # 새로운 위치 업데이트
+        self.current_pos = (
+            portal_pos[0] + self.directions[self.opposite_dir[dir_name]][1][0],
+            portal_pos[1] + self.directions[self.opposite_dir[dir_name]][1][1]
+        )
+        self.visited.add(self.current_pos)
+        self.path.append(self.current_pos)
+        
+        # 새로운 탐색 지점 추가
+        self.queue.append(self.current_pos)
+        # print(f"포탈 회피 후 위치: {self.current_pos}")
+    def mark_portal_avoid_area(self, pos, dx, dy):
+        """포탈 주변 회피 영역 표시"""
+        x, y = pos
+        if dx != 0:  # 수직 이동 포탈
+            for i in range(-6, 7):
+                self.portal_avoid_areas.add((x, y + i))
+        elif dy != 0:  # 수평 이동 포탈
+            for i in range(-6, 7):
+                self.portal_avoid_areas.add((x + i, y))
+# 전역 변수 (제공된 코드와 호환을 위해 유지)
+visited = set()
+path = []
+
+# 실행 예시
+if __name__ == "__main__":
+    print("🔍 맵 전체 탐색 시작...")
+    move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
+    move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
+    print("🔄 F1: 시작 | F2: 중지 | F3: 재시작")
+    characterName = input("캐릭터명 : ")
+    while(not running):
+        time.sleep(1)
+    explorer = SpaceExplorer("MapleStory Worlds-바람의나라 클래식")
+    explorer.explore()
+    
+    print(f"✅ 탐색 완료! 방문 좌표 수: {len(visited)}")
+    time.sleep(2)
+    
+
+
+# # 시작
+
+# print("🔄만리장성2 X:6, Y:97 출발")
+
+# run_all_maps()
