@@ -162,7 +162,6 @@ def check_number_with_context(region, context_keyword, min_value=200):
 
     for line in lines:
         # OCR 결과에서 context_keyword 포함된 줄만 처리
-        if context_keyword in line:
             # "숫자+번" 패턴 추출
             matches = re.findall(r'(\d+)번', line)
             for num_str in matches:
@@ -188,18 +187,6 @@ def get_reverse_key(key):
         'right': 'left'
     }
     return reverse_map.get(key, key)
-
-
-
-def move_and_verify_step(key, region_before, region_after):
-    before = screenshot_region(region_before)
-    move_one_step(key)
-    after = screenshot_region(region_after)
-
-    if check_image_changed(before, after):
-        return True
-    else:
-        return False
 
 def send_discord_message(message):
     global webhook_url
@@ -343,8 +330,9 @@ def press_key(key, duration=0.20):
         keyboard.release(key)
 
 def move_one_step(key):
+    # press_key(key, 0.05)
     press_key(key, 0.1)
-    time.sleep(0.1)
+    # time.sleep(0.1)
 def mark_portal_area_visited(x, y, dx, dy):
     global visited
     # dx, dy는 이동방향을 나타냄
@@ -430,8 +418,10 @@ class SpaceExplorer:
             
             for dir_name in dirs:
                 self.process_direction(dir_name)
+                if(result == 1):
+                    break
             if(result == 1):
-                break
+                    break
         
         # print("탐색 완료!")
         # print(f"방문지점: {len(self.visited)} | 이동경로: {len(self.path)}")
