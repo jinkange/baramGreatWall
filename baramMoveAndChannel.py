@@ -22,7 +22,7 @@ running = False
 outside = False
 key_time = 0
 target_title = "MapleStory Worlds-바람의나라 클래식"
-console_keyword  = "baramMove"
+console_keyword  = "baramMoveAndChannel"
 
 
 def find_console_window(title_contains):
@@ -304,9 +304,9 @@ def restart_macro():
     print("▶ 매크로 재시작")
     running = True
     
-keyboard.add_hotkey('f3', start_macro)
-keyboard.add_hotkey('f4', stop_macro)
-keyboard.add_hotkey('f5', restart_macro)
+keyboard.add_hotkey('f1', start_macro)
+keyboard.add_hotkey('f2', stop_macro)
+keyboard.add_hotkey('f3', restart_macro)
 
 def run_all_maps():
     global result
@@ -343,7 +343,7 @@ try:
     key_time = get_valid_number()
     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
     move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
-    print("🔄 F3: 시작 | F4: 중지 | F5: 재시작")
+    print("🔄 F1: 시작 | F2: 중지 | F3: 재시작")
     run_all_maps()
 except Exception as e:
     print(e)
