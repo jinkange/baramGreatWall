@@ -113,6 +113,8 @@ def check_image_changed(before_img, after_img, threshold=5):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
+    # print("이동성공? : ")
+    # print(non_zero_count > threshold)
     return non_zero_count > threshold
 
 def press_key(key):
@@ -121,7 +123,7 @@ def press_key(key):
     if hwnd:
         activate_window(hwnd)
         keyboard.press(key)
-        time.sleep(0.1)
+        time.sleep(0.4)
         keyboard.release(key)
 
 def load_move_sequence(json_path):
@@ -196,7 +198,7 @@ def activate_window(hwnd):
             print(f"⚠️ SetForegroundWindow 실패: {e}")
 
         time.sleep(0.2)
-def image_exists_at_region(template_path, region, threshold=0.93):
+def image_exists_at_region(template_path, region, threshold=0.80):
     """
     template_path: 찾을 이미지 파일 경로
     region: (x, y, width, height)1281 631
@@ -210,7 +212,7 @@ def image_exists_at_region(template_path, region, threshold=0.93):
 
     result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
     max_val = np.max(result)
-    print(f"{template_path}찾기 :{max_val}")
+    # print(f"{template_path}찾기 :{max_val}")
     return max_val >= threshold
 
 def match_image(image_name, region, threshold=0.80):
@@ -236,7 +238,7 @@ def match_image(image_name, region, threshold=0.80):
 
     result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
     max_val = np.max(result)
-    print(f"{image_name}찾기 :{max_val}")
+    # print(f"{image_name}찾기 :{max_val}")
     return max_val >= threshold
 
 def automation_loop(json_path):
@@ -333,6 +335,7 @@ def run_all_maps():
         return
 
     while True:
+
         change = False
         for i, value in enumerate(values):
             if(not change):
@@ -414,6 +417,8 @@ def run_all_maps():
                     continue
                 region = (493, 84, 62, 44)
                 if match_image("continue.png", region): 
+                    move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
+                    move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
                     pyautogui.click(960,551)
                     pyautogui.click(960,551)
                     break
