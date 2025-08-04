@@ -21,6 +21,7 @@ result = False
 running = False
 outside = False
 key_time = 0
+key_press_time = 0
 char_slot = 0
 target_title = "MapleStory Worlds-바람의나라 클래식"
 console_keyword  = "baramMoveChannel"
@@ -119,11 +120,12 @@ def check_image_changed(before_img, after_img, threshold=5):
 
 def press_key(key):
     global target_title
+    global key_press_time
     hwnd = find_window(target_title)
     if hwnd:
         activate_window(hwnd)
         keyboard.press(key)
-        time.sleep(0.4)
+        time.sleep(key_press_time)
         keyboard.release(key)
 
 def load_move_sequence(json_path):
@@ -325,7 +327,9 @@ keyboard.add_hotkey('f4', stop_macro)
 def run_all_maps():
     folder_path = './data'
     json_files = sorted(glob.glob(os.path.join(folder_path, 'mapData.json')))
-
+    if(not json_files):
+        print("❌ mapData.json 파일을 찾을 수 없습니다.")
+        return
     try:
         with open('./data/server.txt', 'r', encoding='utf-8') as f:
             line = f.read().strip()
@@ -341,9 +345,15 @@ def run_all_maps():
             if(not change):
                 for json_path in json_files:
                     print(f"\n📂 {json_path} 실행 대기...")
-                    automation_loop(json_path)    
+                    automation_loop(json_path)   
                 print(f"채널변경 {key_time}초 대기..")
                 time.sleep(key_time)
+                # print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
+                # for i in range(key_time):
+                #     press_key('tab')
+                #     press_key('right')
+                #     press_key('enter')
+                #     time.sleep(0.5)
             
             print(f"🔹 채널: {value}")
             #메뉴체크
@@ -452,6 +462,7 @@ def get_valid_number():
     pattern = re.compile(r'^\d+$')  # 0 이상의 정수만 허용
 
     while True:
+        # user_input = input("탭 + 방향키 + 엔터 실행 횟수를 입력하세요: ")
         user_input = input("채널변경 대기시간을 입력하세요: ? 초")
         if pattern.match(user_input):
             number = int(user_input)
@@ -468,13 +479,26 @@ def get_valid_number_character():
             return number
         else:
             print("❌ 1 ~ 4이상의 정수를 입력해야 합니다.")
-            
+def get_key_press_time():
+    pattern = re.compile(r'^\d+(\.\d{1,2})?$')  # 정수 또는 소수점 둘째자리까지 허용
+
+    while True:
+        user_input = input("키입력 시간을 입력하세요. (최대 소수점 둘째자리): ")
+        if pattern.match(user_input):
+            number = float(user_input)
+            if number >= 0:
+                return number
+            else:
+                print("❌ 0 이상의 값을 입력해야 합니다.")
+        else:
+            print("❌ 잘못된 형식입니다. 예: 3, 3.1, 3.14")
 try:
     key_time = get_valid_number()
     char_slot = get_valid_number_character()
+    key_press_time = get_key_press_time()
+    print("🔄 F3: 시작 | F4: 중지")
     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
     move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
-    print("🔄 F3: 시작 | F4: 중지")
     run_all_maps()
 except Exception as e:
     print(e)
