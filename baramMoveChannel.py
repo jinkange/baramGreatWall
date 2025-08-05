@@ -110,29 +110,17 @@ def screenshot_region(region):
     return np.array(img)
 
 # 이미지 변화 감지 (True면 바뀐 것)
-def check_image_changed(before_img, after_img, threshold=9):
+def check_image_changed(before_img, after_img, threshold=5):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
     # print("이동성공? : ")
-    # print(non_zero_count)
-    
     # print(non_zero_count > threshold)
     return non_zero_count > threshold
-def press_key2(key):
-    global target_title
-    hwnd = find_window(target_title)
-    if hwnd:
-        activate_window(hwnd)
-        keyboard.press(key)
-        time.sleep(0.07)
-        keyboard.release(key)
-        
+
 def press_key(key):
     global target_title
     global key_press_time
-    # print(key)
-    # print(key_press_time)
     hwnd = find_window(target_title)
     if hwnd:
         activate_window(hwnd)
@@ -167,14 +155,14 @@ def try_detour(last_key, region_before, region_after):
     }
     before = screenshot_region(region_before)
     for key in detour_keys.get(last_key, []):
-        move_one_step(key)
+        press_key(key)
     after = screenshot_region(region_after)
     if check_image_changed(before, after):
         # print(f"✅ {key} 방향 우회 성공")
         return False
     else:
         outside = True
-        # print("⛔ 모든 우회 실패 → 벽 판단")
+    # print("⛔ 모든 우회 실패 → 벽 판단")
         return False
     
 
@@ -262,13 +250,16 @@ def automation_loop(json_path):
     check = False
     tempStep = ''
     move_sequence = load_move_sequence(json_path)
+    if not move_sequence:  # 리스트가 비어 있다면
+        print(f"⚠️ {json_path} 는 내용이 없어 건너뜁니다.")
+        return
     region_before = (955, 705, 127, 17)
     region_after = (955, 705, 127, 17)
     while True:
         # 정방향 이동
         if not running:
             time.sleep(1)
-            continue  # F1 누를 때까지 대기
+            break  # F1 누를 때까지 대기
         
         for step in move_sequence:
             if not running:
@@ -293,7 +284,7 @@ def automation_loop(json_path):
                 tempStep = key
                 
         if not running:
-            continue  # 정지 상태이면 역방향 스킵
+            break  # 정지 상태이면 역방향 스킵
         print("🔁 역방향 복귀 시작")
         # 역방향 이동
         for step in reversed(move_sequence):
@@ -332,11 +323,14 @@ def stop_macro():
     print("⏹ 매크로 중지")
     running = False
     
-keyboard.add_hotkey('f3', start_macro)
-keyboard.add_hotkey('f4', stop_macro)
+keyboard.add_hotkey('f6', start_macro)
+keyboard.add_hotkey('f7', stop_macro)
 
 
 def run_all_maps():
+    if(not running):
+        time.sleep(1)
+        return
     folder_path = './data'
     json_files = sorted(glob.glob(os.path.join(folder_path, 'mapData.json')))
     if(not json_files):
@@ -351,28 +345,36 @@ def run_all_maps():
         return
 
     while True:
-
+        if(not running):
+            time.sleep(1)
+            return
         change = False
         for i, value in enumerate(values):
+            if(not running):
+                time.sleep(1)
+                return
             if(not change):
                 for json_path in json_files:
                     print(f"\n📂 {json_path} 실행 대기...")
                     automation_loop(json_path)   
-                # print(f"채널변경 {key_time}초 대기..")
-                # time.sleep(key_time)
-                print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
-                for i in range(key_time):
-                    press_key2('tab')
-                    press_key2('right')
-                    press_key2('enter')
-                    time.sleep(0.5)
+                    if(not running):
+                        time.sleep(1)
+                        return
+                print(f"채널변경 {key_time}초 대기..")
+                time.sleep(key_time)
+                # print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
+                # for i in range(key_time):
+                #     press_key('tab')
+                #     press_key('right')
+                #     press_key('enter')
+                #     time.sleep(0.5)
             
             print(f"🔹 채널: {value}")
             #메뉴체크
             time.sleep(1)
-            while not running:
+            if(not running):
                 time.sleep(1)
-                continue
+                return
             region = (126,662, 60, 60)
             if match_image("menuCheck.png", region): 
                 pyautogui.click(140,715)
@@ -381,49 +383,56 @@ def run_all_maps():
             
             #채널클릭
             pyautogui.click(87,451)
+            time.sleep(0.1)
             pyautogui.click(87,451)
-            while not running:
+            if(not running):
                 time.sleep(1)
-                continue
+                return
             time.sleep(1)
             #채널 입력창 클릭
             pyautogui.click(870,226)
+            time.sleep(0.1)
             pyautogui.click(870,226)
-            while not running:
+            if(not running):
                 time.sleep(1)
-                continue
-            time.sleep(1)
+                return
+            time.sleep(0.5)
             #채널입력
             pyautogui.write(value)
+            time.sleep(0.5)
             press_key('enter')
-            while not running:
+            time.sleep(0.1)
+            press_key('enter')
+            if(not running):
                 time.sleep(1)
-                continue
+                return
             time.sleep(1)
             #검색된채널이없으면?
             region = (580,326,152, 40)
             if match_image("channelNone.png", region): 
                 press_key('enter')
-                while not running:
+                if(not running):
                     time.sleep(1)
-                    continue
-                time.sleep(1)
+                    return
+                time.sleep(0.5)
                 pyautogui.click(637, 595)
                 
                 change = True
                 continue# 다음채널?
             else:
                 pyautogui.click(394,282)
-                while not running:
+                if(not running):
                     time.sleep(1)
-                    continue
+                    return
                 time.sleep(1)
                 region = (671,329,112,41)
                 if match_image("channelSame.png", region): 
                     press_key('enter')
-                    while not running:
+                    time.sleep(0.1)
+                    press_key('enter')
+                    if(not running):
                         time.sleep(1)
-                        continue
+                        return
                     time.sleep(1)
                     pyautogui.click(637, 595)
                     change = True
@@ -432,11 +441,13 @@ def run_all_maps():
                     print("채널이동 성공")
                     change = False
                     press_key('enter')
+                    time.sleep(0.1)
+                    press_key('enter')
             #이어하기
             while True:
-                while not running:
+                if(not running):
                     time.sleep(1)
-                    continue
+                    return
                 region = (493, 84, 62, 44)
                 if match_image("continue.png", region): 
                     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
@@ -449,9 +460,9 @@ def run_all_maps():
             
             #선택
             region = (527,179, 100, 48)
-            while not running:
+            if(not running):
                 time.sleep(1)
-                continue
+                return
             if match_image("select.png", region): 
                 if(char_slot == 1):
                     pyautogui.click(517,240)
@@ -474,8 +485,8 @@ def get_valid_number():
     pattern = re.compile(r'^\d+$')  # 0 이상의 정수만 허용
 
     while True:
-        user_input = input("탭 + 방향키 + 엔터 실행 횟수를 입력하세요: ")
-        # user_input = input("채널변경 대기시간을 입력하세요: ? 초")
+        # user_input = input("탭 + 방향키 + 엔터 실행 횟수를 입력하세요: ")
+        user_input = input("채널변경 대기시간을 입력하세요: ? 초")
         if pattern.match(user_input):
             number = int(user_input)
             return number
@@ -508,10 +519,11 @@ try:
     key_time = get_valid_number()
     char_slot = get_valid_number_character()
     key_press_time = get_key_press_time()
-    print("🔄 F3: 시작 | F4: 중지")
+    print("🔄 F6: 시작 | F7: 중지")
     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
     move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
-    run_all_maps()
+    while True:
+        run_all_maps()
 except Exception as e:
     print(e)
     input("아무키나 누르세요.")
