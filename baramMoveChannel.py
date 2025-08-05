@@ -110,17 +110,29 @@ def screenshot_region(region):
     return np.array(img)
 
 # 이미지 변화 감지 (True면 바뀐 것)
-def check_image_changed(before_img, after_img, threshold=5):
+def check_image_changed(before_img, after_img, threshold=9):
     diff = cv2.absdiff(before_img, after_img)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
     non_zero_count = cv2.countNonZero(gray)
     # print("이동성공? : ")
+    # print(non_zero_count)
+    
     # print(non_zero_count > threshold)
     return non_zero_count > threshold
-
+def press_key2(key):
+    global target_title
+    hwnd = find_window(target_title)
+    if hwnd:
+        activate_window(hwnd)
+        keyboard.press(key)
+        time.sleep(0.07)
+        keyboard.release(key)
+        
 def press_key(key):
     global target_title
     global key_press_time
+    # print(key)
+    # print(key_press_time)
     hwnd = find_window(target_title)
     if hwnd:
         activate_window(hwnd)
@@ -155,14 +167,14 @@ def try_detour(last_key, region_before, region_after):
     }
     before = screenshot_region(region_before)
     for key in detour_keys.get(last_key, []):
-        press_key(key)
+        move_one_step(key)
     after = screenshot_region(region_after)
     if check_image_changed(before, after):
         # print(f"✅ {key} 방향 우회 성공")
         return False
     else:
         outside = True
-    # print("⛔ 모든 우회 실패 → 벽 판단")
+        # print("⛔ 모든 우회 실패 → 벽 판단")
         return False
     
 
@@ -346,14 +358,14 @@ def run_all_maps():
                 for json_path in json_files:
                     print(f"\n📂 {json_path} 실행 대기...")
                     automation_loop(json_path)   
-                print(f"채널변경 {key_time}초 대기..")
-                time.sleep(key_time)
-                # print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
-                # for i in range(key_time):
-                #     press_key('tab')
-                #     press_key('right')
-                #     press_key('enter')
-                #     time.sleep(0.5)
+                # print(f"채널변경 {key_time}초 대기..")
+                # time.sleep(key_time)
+                print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
+                for i in range(key_time):
+                    press_key2('tab')
+                    press_key2('right')
+                    press_key2('enter')
+                    time.sleep(0.5)
             
             print(f"🔹 채널: {value}")
             #메뉴체크
@@ -462,8 +474,8 @@ def get_valid_number():
     pattern = re.compile(r'^\d+$')  # 0 이상의 정수만 허용
 
     while True:
-        # user_input = input("탭 + 방향키 + 엔터 실행 횟수를 입력하세요: ")
-        user_input = input("채널변경 대기시간을 입력하세요: ? 초")
+        user_input = input("탭 + 방향키 + 엔터 실행 횟수를 입력하세요: ")
+        # user_input = input("채널변경 대기시간을 입력하세요: ? 초")
         if pattern.match(user_input):
             number = int(user_input)
             return number
