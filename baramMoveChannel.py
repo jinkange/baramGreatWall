@@ -129,8 +129,22 @@ def press_key(key):
         keyboard.release(key)
 
 def load_move_sequence(json_path):
-    with open(json_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                print(f"⚠️ 파일이 비어 있습니다: {json_path}")
+                return []
+        return json.loads(content)  # or json.load(f) if you reopen
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON 파싱 오류: {json_path}")
+        print(f"    → {e}")
+        return []
+
+    except Exception as e:
+        print(f"❌ 파일을 읽는 중 오류 발생: {json_path}")
+        print(f"    → {e}")
+        return []
 
 def move_one_step(key):
     press_key(key)
@@ -401,8 +415,6 @@ def run_all_maps():
             pyautogui.write(value)
             time.sleep(0.5)
             press_key('enter')
-            time.sleep(0.1)
-            press_key('enter')
             if(not running):
                 time.sleep(1)
                 return
@@ -438,11 +450,22 @@ def run_all_maps():
                     change = True
                     continue# 다음채널?
                 else:
-                    print("채널이동 성공")
                     change = False
                     press_key('enter')
                     time.sleep(0.1)
                     press_key('enter')
+                    
+                    time.sleep(2)
+                    region = (876, 697, 950, 725)
+                    if match_image("changecheck.png", region): 
+                        print("채널이동 실패")
+                        press_key('esc')
+                        time.sleep(0.1)
+                        press_key('esc')
+                        continue# 다음채널?
+                        
+                    print("채널이동 성공")
+                    
             #이어하기
             while True:
                 if(not running):
