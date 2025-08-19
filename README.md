@@ -7,6 +7,10 @@ pyinstaller --onefile --hidden-import=cv2 .\baramGreatWallBFS.py
 pyinstaller --onefile --hidden-import=cv2 .\moveRecord.py
 pyinstaller --onefile --hidden-import=cv2 .\baramMove.py
 pyinstaller --onefile --hidden-import=cv2 .\baramMoveChannel.py
+pyinstaller --onefile --hidden-import=cv2 .\baramMultiUtile.py
+
+
+
 pyinstaller --onefile .\baramStorage.py
 
 pip install pyautogui keyboard opencv-python pytesseract pillow pygetwindow
