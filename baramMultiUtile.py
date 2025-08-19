@@ -492,8 +492,10 @@ def run_all_maps():
                     return
                 region = (493, 84, 62, 44)
                 if match_image("continue.png", region): 
+                    time.sleep(1)
                     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
                     move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
+                    time.sleep(0.5)
                     pyautogui.click(960,551)
                     pyautogui.click(960,551)
                     break
@@ -506,6 +508,7 @@ def run_all_maps():
                 time.sleep(1)
                 return
             if match_image("select.png", region): 
+                time.sleep(0.5)
                 if(char_slot == 1):
                     pyautogui.click(517,240)
                 elif(char_slot == 2):
@@ -516,6 +519,7 @@ def run_all_maps():
                     pyautogui.click(517,330)
                 elif(char_slot == 5):
                     pyautogui.click(517,360)
+                time.sleep(0.5)
                 pyautogui.click(641,609)
                 time.sleep(5)    
             else:
