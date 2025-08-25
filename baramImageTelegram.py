@@ -13,6 +13,10 @@ import datetime
 import sys
 import telegram
 import asyncio
+
+import tkinter as tk
+from tkinter import messagebox
+
 EXPIRE_DATE = datetime.datetime(2025, 11, 1)
 async def telegram_push(characterName):
     #테스트 내꺼
@@ -116,6 +120,13 @@ def search_images(screen, image_folder):
             print(f"{filename} 발견!! / 매칭률 : {max_val.toFixed(2)}")
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
             asyncio.run(telegram_push(characterName))
+            root = tk.Tk()
+            root.withdraw()
+            # 간단한 확인창
+            messagebox.showinfo("확인", f"{filename} 발견!! / 매칭률 : {max_val.toFixed(2)}")
+            # 창 닫기
+            root.destroy()
+            
             return True
     return False
 
