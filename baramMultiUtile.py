@@ -29,6 +29,8 @@ if now > EXPIRE_DATE:
     sys.exit(1)  # 프로그램 종료
 #고객웹훅 조재건
 webhook_url = 'https://discord.com/api/webhooks/1396398717611020339/0nLGyT_nBVYjxEL_R3PJnGGjoVUeNwUAOLx3q-rd_O3zJKxci76FP4n11cRUPozypjU-'
+#테스트용
+# webhook_url = 'https://discord.com/api/webhooks/1391740750521171999/Fa7P9Mr91uKW6BwNC-enL5kW63qxD8pP82LMRIuvQ2oYGXTwjmY0m7tnxKjZIJrBY4Lk'
 
 searching = False
 paused_until = 0
@@ -43,7 +45,7 @@ key_time = 0
 key_press_time = 0
 char_slot = 0
 target_title = "MapleStory Worlds-바람의나라 클래식"
-console_keyword  = "baramMoveChannel"
+console_keyword  = "baramMultiUtile"
 channel_num = ''
 
 def find_console_window(title_contains):
@@ -98,7 +100,7 @@ def move_console_next_to_game(game_title, console_keyword):
     console_height = gheight
     console_x = gx + gwidth  # 게임 창 오른쪽에 붙이기
     console_y = gy
-    console_hwnd = find_console_window("baramMove")
+    console_hwnd = find_console_window("baramMultiUtile")
     move_and_resize_window_by_hwnd(console_hwnd, console_x, console_y, console_width, console_height)
 
 def find_window(title):
@@ -146,7 +148,15 @@ def press_key(key):
         keyboard.press(key)
         time.sleep(key_press_time)
         keyboard.release(key)
-
+def press_key2(key):
+    global target_title
+    hwnd = find_window(target_title)
+    if hwnd:
+        activate_window(hwnd)
+        keyboard.press(key)
+        time.sleep(0.01)
+        keyboard.release(key)
+        
 def load_move_sequence(json_path):
     try:
         with open(json_path, "r", encoding="utf-8") as f:
@@ -345,19 +355,7 @@ def automation_loop(json_path):
         print("✅ 정/역방향 이동 모두 완료.")
         break
     
-                
-def start_macro():
-    global running
-    print("▶ 매크로 시작")
-    running = True
 
-def stop_macro():
-    global running
-    print("⏹ 매크로 중지")
-    running = False
-    
-keyboard.add_hotkey('f6', start_macro)
-keyboard.add_hotkey('f7', stop_macro)
 
 
 def run_all_maps():
@@ -398,10 +396,10 @@ def run_all_maps():
                 # time.sleep(key_time)
                 print(f"채널변경 전 탭+방향키+엔터 {key_time}회 반복")
                 for i in range(key_time):
-                    press_key('tab')
-                    press_key('right')
-                    press_key('enter')
-                    time.sleep(0.5)
+                    press_key2('tab')
+                    press_key2('right')
+                    press_key2('enter')
+                    time.sleep(0.1)
             
             print(f"🔹 채널: {value}")
             channel_num = value
@@ -494,8 +492,10 @@ def run_all_maps():
                     return
                 region = (493, 84, 62, 44)
                 if match_image("continue.png", region): 
+                    time.sleep(1)
                     move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
                     move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
+                    time.sleep(0.5)
                     pyautogui.click(960,551)
                     pyautogui.click(960,551)
                     break
@@ -508,6 +508,7 @@ def run_all_maps():
                 time.sleep(1)
                 return
             if match_image("select.png", region): 
+                time.sleep(0.5)
                 if(char_slot == 1):
                     pyautogui.click(517,240)
                 elif(char_slot == 2):
@@ -518,6 +519,7 @@ def run_all_maps():
                     pyautogui.click(517,330)
                 elif(char_slot == 5):
                     pyautogui.click(517,360)
+                time.sleep(0.5)
                 pyautogui.click(641,609)
                 time.sleep(5)    
             else:
@@ -559,23 +561,15 @@ def get_key_press_time():
                 print("❌ 0 이상의 값을 입력해야 합니다.")
         else:
             print("❌ 잘못된 형식입니다. 예: 3, 3.1, 3.14")
-try:
-    key_time = get_valid_number()
-    characterName = input("캐릭터명 : ")
-    char_slot = get_valid_number_character()
-    key_press_time = get_key_press_time()
-    print("🔄 F6: 시작 | F7: 중지")
-    move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
-    move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
-    while True:
-        run_all_maps()
-except Exception as e:
-    print(e)
-    input("아무키나 누르세요.")
+
 
 
 def capture_fullscreen():
-    screenshot = ImageGrab.grab()
+    
+    x, y, w, h = (172,35, 931,541)
+    bbox = (x, y, x + w, y + h)
+    
+    screenshot = ImageGrab.grab(bbox)
     screenshot_np = np.array(screenshot)
     screenshot_bgr = cv2.cvtColor(screenshot_np, cv2.COLOR_RGB2BGR)
     return screenshot_bgr
@@ -640,23 +634,47 @@ def search_loop():
                 # print("❌ 이미지 없음. 다시 탐색 중...")
             time.sleep(1)
         else:
-            time.sleep(0.1)
+            time.sleep(1)
+def channel_loop():    
+    while True:
+        run_all_maps()
 
 def key_listener():
-    global searching
+    global searching, running
     while True:
         if keyboard.is_pressed('f6'):
             if not searching:
                 print("▶️ 멀티이미지 서치 시작")
+                running
+                print("▶ 매크로 시작")
+                running = True
                 searching = True
             time.sleep(0.3)  # 키 중복 방지
         elif keyboard.is_pressed('f7'):
             if searching:
                 print("⏹️ 멀티이미지 서치 중지")
+                running 
+                print("⏹ 매크로 중지")
+                running = False
                 searching = False
             time.sleep(0.3)
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     # 이미지 서치 스레드    
     threading.Thread(target=search_loop, daemon=True).start()
-    key_listener()
+    threading.Thread(target=channel_loop, daemon=True).start()
+    
+    try:
+        key_time = get_valid_number()
+        characterName = input("캐릭터명 : ")
+        char_slot = get_valid_number_character()
+        key_press_time = get_key_press_time()
+        print("🔄 F6: 시작 | F7: 중지")
+        move_and_resize_window("MapleStory Worlds-바람의나라 클래식", 0, 0, 1280,750)
+        move_console_next_to_game("MapleStory Worlds-바람의나라 클래식", console_keyword)
+        key_listener()
+    except Exception as e:
+        print(e)
+        input("아무키나 누르세요.")
+    
