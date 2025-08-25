@@ -58,6 +58,24 @@ move_resize_window(console_windows[0], 0, 0, 240, 500)# 1번
 # webhook_url = 'https://discord.com/api/webhooks/1392398561307529216/NmUk798H0_A5TxmVfizW7UEX79bnT0uk0RrJYyUuRdaPVQtlksLSwnua5p9PMXnWzmoL'
 # #고객웹훅 조재건
 # webhook_url = 'https://discord.com/api/webhooks/1396398717611020339/0nLGyT_nBVYjxEL_R3PJnGGjoVUeNwUAOLx3q-rd_O3zJKxci76FP4n11cRUPozypjU-'
+def get_matching_rate():
+    while True:
+        try:
+            value = float(input("매칭률(0.00 ~ 1.00 사이) 입력: "))
+            
+            # 범위 체크
+            if 0.0 <= value <= 1.0:
+                # 소수점 둘째 자리로 제한
+                return round(value, 2)
+            else:
+                print("❌ 0.00 이상 1.00 이하 숫자만 입력해주세요.")
+        
+        except ValueError:
+            print("❌ 숫자 형식으로 입력해주세요. 예: 0.81")
+
+# 사용 예시
+rate = get_matching_rate()
+print(f"입력한 매칭률: {rate:.2f}")
 
 searching = False
 paused_until = 0
@@ -71,7 +89,7 @@ def capture_fullscreen():
     return screenshot_bgr
 
 def search_images(screen, image_folder):
-    global paused_until, found_flags
+    global paused_until, found_flags, rate
 
     for filename in os.listdir(image_folder):
         if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -94,7 +112,8 @@ def search_images(screen, image_folder):
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
         # 이미지가 발견된 경우
-        if max_val >= 0.8:
+        if max_val >= rate:
+            print(f"{filename} 발견!! / 매칭률 : {max_val.toFixed(2)}")
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
             asyncio.run(telegram_push(characterName))
             return True
